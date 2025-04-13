@@ -63,11 +63,11 @@ func InitDB(dataSourceName string) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if err = db.Ping(); err != nil {
 		return nil, err
 	}
-	
+
 	return db, nil
 }
 ```
@@ -262,6 +262,30 @@ func NewModels(db *sqlx.DB) Models {
 }
 ```
 
+Create `internal/models/errors.go`
+
+```go
+package models
+
+import (
+	"errors"
+)
+
+var (
+	// ErrRecordNotFound is returned when a record doesn't exist in database
+	ErrRecordNotFound = errors.New("record not found")
+
+	// ErrDuplicateEmail is returned when a user tries to register with an email that's already in use
+	ErrDuplicateEmail = errors.New("duplicate email")
+
+	// ErrInvalidCredentials is returned when a user provides invalid credentials
+	ErrInvalidCredentials = errors.New("invalid credentials")
+
+	// ErrInvalidToken is returned when a token is invalid or expired
+	ErrInvalidToken = errors.New("invalid token")
+)
+```
+
 Create `internal/models/users.go`:
 
 ```go
@@ -363,7 +387,7 @@ func (m UserModel) GetByID(id int) (*User, error) {
 func (m UserModel) Update(user *User) error {
 	query := `
 		UPDATE users
-		SET name = :name, email = :email, password_hash = :password_hash, 
+		SET name = :name, email = :email, password_hash = :password_hash,
 		    role = :role, activated = :activated, updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`
@@ -603,78 +627,62 @@ var emailTemplates embed.FS
 Create email templates in `ui/templates/email`:
 
 1. `activation.tmpl`:
+
 ```html
-{{define "subject"}}Welcome to Go WebApp!{{end}}
-
-{{define "plainBody"}}
-Hi {{.Name}},
-
-Thanks for signing up for a Go WebApp account. We're excited to have you on board!
-
-Please send a PUT request to the following URL to activate your account:
-
-{{.ActivationURL}}
-
-Thanks,
-The Go WebApp Team
-{{end}}
-
-{{define "htmlBody"}}
-<!doctype html>
+{{define "subject"}}Welcome to Go WebApp!{{end}} {{define "plainBody"}} Hi
+{{.Name}}, Thanks for signing up for a Go WebApp account. We're excited to have
+you on board! Please send a PUT request to the following URL to activate your
+account: {{.ActivationURL}} Thanks, The Go WebApp Team {{end}} {{define
+"htmlBody"}}
+<!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>{{template "subject" .}}</title>
-</head>
-<body>
+  </head>
+  <body>
     <p>Hi {{.Name}},</p>
-    <p>Thanks for signing up for a Go WebApp account. We're excited to have you on board!</p>
+    <p>
+      Thanks for signing up for a Go WebApp account. We're excited to have you
+      on board!
+    </p>
     <p>Please click the following link to activate your account:</p>
     <p><a href="{{.ActivationURL}}">{{.ActivationURL}}</a></p>
     <p>Thanks,</p>
     <p>The Go WebApp Team</p>
-</body>
+  </body>
 </html>
 {{end}}
 ```
 
 2. `password-reset.tmpl`:
+
 ```html
-{{define "subject"}}Password Reset Request{{end}}
-
-{{define "plainBody"}}
-Hi {{.Name}},
-
-We received a request to reset your password. If you didn't make this request, please ignore this email.
-
-To reset your password, please send a PUT request to the following URL:
-
-{{.ResetURL}}
-
-This link will expire in {{.Expiration}} hours.
-
-Thanks,
-The Go WebApp Team
-{{end}}
-
-{{define "htmlBody"}}
-<!doctype html>
+{{define "subject"}}Password Reset Request{{end}} {{define "plainBody"}} Hi
+{{.Name}}, We received a request to reset your password. If you didn't make this
+request, please ignore this email. To reset your password, please send a PUT
+request to the following URL: {{.ResetURL}} This link will expire in
+{{.Expiration}} hours. Thanks, The Go WebApp Team {{end}} {{define "htmlBody"}}
+<!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>{{template "subject" .}}</title>
-</head>
-<body>
+  </head>
+  <body>
     <p>Hi {{.Name}},</p>
-    <p>We received a request to reset your password. If you didn't make this request, please ignore this email.</p>
+    <p>
+      We received a request to reset your password. If you didn't make this
+      request, please ignore this email.
+    </p>
     <p>To reset your password, please click the following link:</p>
     <p><a href="{{.ResetURL}}">{{.ResetURL}}</a></p>
     <p>This link will expire in {{.Expiration}} hours.</p>
     <p>Thanks,</p>
     <p>The Go WebApp Team</p>
-</body>
+  </body>
 </html>
 {{end}}
 ```
@@ -1325,29 +1333,30 @@ func secureHeaders(next http.Handler) http.Handler {
 Create base template `ui/html/base.layout.tmpl`:
 
 ```html
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{template "title" .}} - Go WebApp</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/main.css" rel="stylesheet" type="text/css">
-</head>
-<body>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet" />
+    <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
     {{template "navbar" .}}
 
     <main class="container mt-4">
-        {{with .Flash}}
-        <div class="alert alert-success">{{.}}</div>
-        {{end}}
-        {{template "main" .}}
+      {{with .Flash}}
+      <div class="alert alert-success">{{.}}</div>
+      {{end}} {{template "main" .}}
     </main>
 
     {{template "footer" .}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/main.js" type="text/javascript"></script>
-</body>
+  </body>
 </html>
 ```
 
@@ -1356,42 +1365,46 @@ Create navbar partial `ui/html/partials/navbar.tmpl`:
 ```html
 {{define "navbar"}}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/">Go WebApp</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/posts">Posts</a>
-                </li>
-            </ul>
-            <ul class="navbar-nav">
-                {{if .IsAuthenticated}}
-                <li class="nav-item">
-                    <a class="nav-link" href="/posts/create">Create Post</a>
-                </li>
-                <li class="nav-item">
-                    <form action="/user/logout" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-                        <button type="submit" class="btn btn-link nav-link">Logout</button>
-                    </form>
-                </li>
-                {{else}}
-                <li class="nav-item">
-                    <a class="nav-link" href="/user/signup">Signup</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/user/login">Login</a>
-                </li>
-                {{end}}
-            </ul>
-        </div>
+  <div class="container">
+    <a class="navbar-brand" href="/">Go WebApp</a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/posts">Posts</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav">
+        {{if .IsAuthenticated}}
+        <li class="nav-item">
+          <a class="nav-link" href="/posts/create">Create Post</a>
+        </li>
+        <li class="nav-item">
+          <form action="/user/logout" method="POST">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+            <button type="submit" class="btn btn-link nav-link">Logout</button>
+          </form>
+        </li>
+        {{else}}
+        <li class="nav-item">
+          <a class="nav-link" href="/user/signup">Signup</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/user/login">Login</a>
+        </li>
+        {{end}}
+      </ul>
     </div>
+  </div>
 </nav>
 {{end}}
 ```
@@ -1399,19 +1412,17 @@ Create navbar partial `ui/html/partials/navbar.tmpl`:
 Create home page template `ui/html/home.page.tmpl`:
 
 ```html
-{{template "base" .}}
-
-{{define "title"}}Home{{end}}
-
-{{define "main"}}
+{{template "base" .}} {{define "title"}}Home{{end}} {{define "main"}}
 <div class="jumbotron">
-    <h1 class="display-4">Welcome to Go WebApp!</h1>
-    <p class="lead">This is a simple web application built with Go and SQLite.</p>
-    <hr class="my-4">
-    <p>It includes user authentication, CRUD operations, and more.</p>
-    {{if not .IsAuthenticated}}
-    <a class="btn btn-primary btn-lg" href="/user/signup" role="button">Sign up</a>
-    {{end}}
+  <h1 class="display-4">Welcome to Go WebApp!</h1>
+  <p class="lead">This is a simple web application built with Go and SQLite.</p>
+  <hr class="my-4" />
+  <p>It includes user authentication, CRUD operations, and more.</p>
+  {{if not .IsAuthenticated}}
+  <a class="btn btn-primary btn-lg" href="/user/signup" role="button"
+    >Sign up</a
+  >
+  {{end}}
 </div>
 {{end}}
 ```
@@ -1505,7 +1516,7 @@ CMD ["./webapp"]
 Create `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   web:
@@ -1694,6 +1705,7 @@ The application will be available at `https://localhost:4000` (with self-signed 
 ## Summary
 
 This comprehensive guide covers:
+
 1. Project setup with Go modules
 2. SQLite database integration
 3. User authentication (signup, login, logout)
