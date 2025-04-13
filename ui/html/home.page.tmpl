@@ -1,0 +1,11 @@
+{{template "base" .}} {{define "title"}}Home{{end}} {{define "main"}}
+<div class="jumbotron">
+    <h1 class="display-4">Welcome to Go WebApp!</h1>
+    <p class="lead">This is a simple web application built with Go and SQLite.</p>
+    <hr class="my-4" />
+    <p>It includes user authentication, CRUD operations, and more.</p>
+    {{if not .IsAuthenticated}}
+    <a class="btn btn-primary btn-lg" href="/user/signup" role="button">Sign up</a>
+    {{end}}
+</div>
+{{end}}
