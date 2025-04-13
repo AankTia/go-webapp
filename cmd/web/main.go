@@ -12,7 +12,6 @@ import (
 
 	"github.com/AankTia/go-webapp/internal/models"
 	"github.com/rs/zerolog"
-	"gorm.io/gorm/logger"
 )
 
 type application struct {
